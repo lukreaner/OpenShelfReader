@@ -76,12 +76,20 @@ The first MVP is successful when a user can:
 4. Keep backend-specific DTOs out of UI and sync code.
 5. Review sync, secret handling and reader regressions carefully before merging.
 
-## License decision
+## Building locally
 
-No license is selected yet. Decide before publishing a release or inviting outside contributors. Suggested options:
+Requirements:
 
-- Apache-2.0 for broad reuse and contributor friendliness.
-- GPL-3.0 if app derivatives should remain open.
-- AGPL-3.0 if a hosted/server component becomes central later.
+- JDK 17 or a newer JDK supported by the selected Gradle and Android Gradle Plugin versions.
+- Android SDK platform 35 and build tools 35.0.0.
 
-See `docs/09-license-decision.md`.
+Useful commands:
+
+```bash
+./gradlew :shared:core:jvmTest
+./gradlew :apps:android:assembleDebug
+```
+
+## License
+
+OpenShelf Reader is licensed under Apache-2.0. See `LICENSE` and `docs/09-license-decision.md`.

@@ -1,44 +1,19 @@
-# License decision
+# License
 
-No license is selected yet. Decide before publishing a release or inviting outside contributors.
+OpenShelf Reader is licensed under Apache-2.0.
 
-## Option: Apache-2.0
+## Why Apache-2.0
 
-Good when:
+Apache-2.0 is a good fit because:
 
 - You want broad adoption.
 - You want permissive reuse.
 - You want lower friction for contributors and downstream apps.
 
-Tradeoff:
+The tradeoff is that someone can build a proprietary fork.
 
-- Someone can build a proprietary fork.
+## Other options considered
 
-## Option: GPL-3.0
+GPL-3.0 can be a good fit when modified app distributions should remain open, but some contributors and companies avoid GPL.
 
-Good when:
-
-- You want modified app distributions to remain open.
-- You do not plan a network/server component.
-
-Tradeoff:
-
-- Some contributors and companies avoid GPL.
-
-## Option: AGPL-3.0
-
-Good when:
-
-- You later add a server component and want network-use copyleft.
-- You want stronger protection against hosted proprietary forks.
-
-Tradeoff:
-
-- Higher friction.
-- Some mobile app ecosystems and contributors may dislike it.
-
-## Recommendation for now
-
-If the project remains app-only and avoids a dedicated sync server, Apache-2.0 is the friendliest default.
-
-If a companion server becomes central later, revisit AGPL-3.0 with a proper ADR before writing server code.
+AGPL-3.0 can be a good fit if a hosted/server component becomes central later, but it would add higher friction for a mobile-first project. If a companion server becomes central later, revisit licensing with a proper ADR before writing server code.
