@@ -12,7 +12,7 @@ apps/
 shared/
   core/             Domain models and use cases
   source-api/       SourceAdapter contracts
-  kavita/           Kavita adapter implementation
+  kavita-api/       Kavita adapter/auth implementation
   sync/             Local-first progress sync and conflict rules
   storage/          Local database abstractions
   reader-api/       Reader-engine abstraction layer

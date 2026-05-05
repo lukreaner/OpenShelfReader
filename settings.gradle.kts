@@ -19,3 +19,4 @@ rootProject.name = "OpenShelfReader"
 include(":apps:android")
 include(":shared:core")
 include(":shared:source-api")
+include(":shared:kavita-api")
