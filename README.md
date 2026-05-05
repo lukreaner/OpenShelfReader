@@ -86,7 +86,7 @@ Requirements:
 Useful commands:
 
 ```bash
-./gradlew :shared:core:jvmTest
+./gradlew :shared:core:jvmTest :shared:source-api:jvmTest
 ./gradlew :apps:android:assembleDebug
 ```
 

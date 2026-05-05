@@ -1,4 +1,4 @@
-name: Build
+name: CI
 
 on:
   pull_request:
@@ -9,8 +9,9 @@ permissions:
   contents: read
 
 jobs:
-  gradle:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,5 +29,8 @@ jobs:
           yes | sdkmanager --licenses >/dev/null
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build and test
-        run: ./gradlew --no-daemon :shared:core:jvmTest :apps:android:assembleDebug
+      - name: Run shared module tests
+        run: ./gradlew --no-daemon :shared:core:jvmTest :shared:source-api:jvmTest
+
+      - name: Assemble Android debug
+        run: ./gradlew --no-daemon :apps:android:assembleDebug
