@@ -24,4 +24,9 @@ data class Publication(
 enum class PublicationFormat {
     EPUB,
     PDF,
+    CBZ,
+    CBR,
+    MOBI,
+    AZW3,
+    UNKNOWN,
 }

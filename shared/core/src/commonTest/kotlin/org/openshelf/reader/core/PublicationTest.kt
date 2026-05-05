@@ -14,6 +14,22 @@ class PublicationTest {
     }
 
     @Test
+    fun knowsFuturePublicationFormats() {
+        assertEquals(
+            setOf(
+                PublicationFormat.EPUB,
+                PublicationFormat.PDF,
+                PublicationFormat.CBZ,
+                PublicationFormat.CBR,
+                PublicationFormat.MOBI,
+                PublicationFormat.AZW3,
+                PublicationFormat.UNKNOWN,
+            ),
+            PublicationFormat.entries.toSet(),
+        )
+    }
+
+    @Test
     fun rejectsBlankPublicationIds() {
         assertFailsWith<IllegalArgumentException> {
             PublicationId(" ")
