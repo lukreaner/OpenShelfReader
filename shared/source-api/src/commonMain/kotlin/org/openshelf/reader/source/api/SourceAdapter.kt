@@ -5,6 +5,10 @@ interface SourceAdapter {
     val sourceType: SourceType
     val capabilities: SourceCapabilities
 
+    /**
+     * Methods that do not wrap their result in a typed result object throw [SourceAdapterException]
+     * when the source rejects a request, returns an unusable response, or does not support the operation.
+     */
     suspend fun authenticate(credentials: SourceCredentials): AuthResult
     suspend fun refreshCapabilities(): SourceCapabilities
 

@@ -38,7 +38,7 @@ class KavitaAuthenticationClient(
     ): KavitaAuthResult {
         return try {
             val response = httpClient.get("${baseUrl.value}/api/plugin/authkey-expires") {
-                header(ApiKeyHeader, apiKey)
+                header(KavitaApiKeyHeader, apiKey)
             }
 
             when (response.status) {
@@ -69,13 +69,6 @@ class KavitaAuthenticationClient(
         }
     }
 
-    private suspend fun io.ktor.client.statement.HttpResponse.redactedBodySnippet(apiKey: String): String? {
-        val body = runCatching { bodyAsText() }.getOrNull() ?: return null
-        return body.redactApiKey(apiKey)
-            .take(MaxBodySnippetLength)
-            .ifBlank { null }
-    }
-
     private fun parseExpiration(body: String): KavitaAuthKeyExpiration {
         val trimmed = body.trim()
         if (trimmed == "null") return KavitaAuthKeyExpiration.DoesNotExpire
@@ -101,14 +94,7 @@ class KavitaAuthenticationClient(
         }
     }
 
-    private fun String.redactApiKey(apiKey: String): String {
-        if (apiKey.isBlank()) return this
-        return replace(apiKey, RedactedSecret)
-    }
-
     companion object {
-        internal const val ApiKeyHeader = "x-api-key"
-        private const val MaxBodySnippetLength = 300
-        private const val RedactedSecret = "<redacted>"
+        internal const val ApiKeyHeader = KavitaApiKeyHeader
     }
 }
