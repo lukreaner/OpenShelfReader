@@ -1,0 +1,20 @@
+name: Docs check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  docs-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required project docs exist
+        run: |
+          test -f README.md
+          test -f CONTRIBUTING.md
+          test -f docs/01-architecture.md
+          test -f docs/03-sync-without-dedicated-server.md
+          test -f docs/roadmap.md
+          test -f docs/adr/ADR-0002-no-dedicated-sync-server-for-now.md

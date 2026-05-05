@@ -1,0 +1,25 @@
+name: Spike
+description: Time-boxed research task
+labels: ["type:spike"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Research question
+      description: What do we need to learn?
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: What should the spike not do?
+    validations:
+      required: false
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected output
+      placeholder: Document findings in docs/spikes/readium-epub-locators.md
+    validations:
+      required: true

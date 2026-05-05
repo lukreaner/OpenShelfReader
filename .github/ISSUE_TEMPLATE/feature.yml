@@ -1,0 +1,44 @@
+name: Feature
+description: Request or track a feature implementation
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should be built?
+      placeholder: Add Kavita authentication with API key support.
+    validations:
+      required: true
+  - type: textarea
+    id: user_value
+    attributes:
+      label: User value
+      description: Why does this matter for the reading experience?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included?
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: What must not be included?
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Bullet list of done conditions.
+      placeholder: |
+        - [ ] User can enter server URL and API key.
+        - [ ] Invalid credentials produce a readable error.
+        - [ ] API key is not logged.
+    validations:
+      required: true
