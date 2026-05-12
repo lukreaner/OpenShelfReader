@@ -68,6 +68,23 @@ data class RemotePublicationFile(
     }
 }
 
+data class RemoteDownloadRequest(
+    val bookId: RemoteBookId,
+    val fileId: RemoteFileId,
+    val expectedFormat: PublicationFormat,
+    val expectedFileName: String? = null,
+    val expectedSizeBytes: Long? = null,
+) {
+    init {
+        require(expectedFileName == null || expectedFileName.isNotBlank()) {
+            "Expected download file name must not be blank."
+        }
+        require(expectedSizeBytes == null || expectedSizeBytes >= 0) {
+            "Expected download size must not be negative."
+        }
+    }
+}
+
 data class RemoteSearchResult(
     val book: RemoteBook,
     val score: Double? = null,
@@ -114,9 +131,13 @@ sealed interface DownloadResult {
         val fileId: RemoteFileId,
         val format: PublicationFormat,
         val bytesWritten: Long? = null,
+        val fileName: String? = null,
+        val contentType: String? = null,
     ) : DownloadResult {
         init {
             require(bytesWritten == null || bytesWritten >= 0) { "Downloaded byte count must not be negative." }
+            require(fileName == null || fileName.isNotBlank()) { "Downloaded file name must not be blank." }
+            require(contentType == null || contentType.isNotBlank()) { "Downloaded content type must not be blank." }
         }
     }
 

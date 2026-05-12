@@ -8,7 +8,7 @@ import org.openshelf.reader.source.api.ProgressWriteResult
 import org.openshelf.reader.source.api.RemoteBook
 import org.openshelf.reader.source.api.RemoteBookDetails
 import org.openshelf.reader.source.api.RemoteBookId
-import org.openshelf.reader.source.api.RemoteFileId
+import org.openshelf.reader.source.api.RemoteDownloadRequest
 import org.openshelf.reader.source.api.RemoteLibrary
 import org.openshelf.reader.source.api.RemoteLibraryId
 import org.openshelf.reader.source.api.RemoteProgress
@@ -35,6 +35,11 @@ class KavitaSourceAdapter(
         baseUrl = baseUrl,
         apiKey = apiKey,
     ),
+    private val downloadClient: KavitaDownloadClient = KavitaDownloadClient(
+        httpClient = httpClient,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+    ),
 ) : SourceAdapter {
     constructor(
         httpClient: HttpClient,
@@ -57,7 +62,7 @@ class KavitaSourceAdapter(
     override val capabilities: SourceCapabilities = SourceCapabilities(
         supportsLibraryBrowsing = true,
         supportsSearch = false,
-        supportsDownloads = false,
+        supportsDownloads = true,
         supportsRemoteProgressRead = false,
         supportsRemoteProgressWrite = false,
         supportsCollections = false,
@@ -98,10 +103,10 @@ class KavitaSourceAdapter(
     }
 
     override suspend fun downloadFile(
-        fileId: RemoteFileId,
+        request: RemoteDownloadRequest,
         sink: DownloadSink,
     ): DownloadResult {
-        return DownloadResult.Failure(unsupportedError("downloadFile"))
+        return downloadClient.downloadFile(request, sink)
     }
 
     override suspend fun getRemoteProgress(bookId: RemoteBookId): RemoteProgress? {

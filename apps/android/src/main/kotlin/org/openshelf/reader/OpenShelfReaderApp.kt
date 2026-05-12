@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -39,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.openshelf.reader.core.PublicationFormat
+import org.openshelf.reader.reader.ReaderActivity
 import org.openshelf.reader.source.api.RemoteBook
 import org.openshelf.reader.source.api.RemoteBookDetails
 import org.openshelf.reader.source.api.RemoteLibrary
@@ -59,6 +62,7 @@ internal fun OpenShelfReaderApp(
     viewModel: KavitaBrowserViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     BackHandler(enabled = state.canNavigateBack) {
         viewModel.goBack()
@@ -73,11 +77,24 @@ internal fun OpenShelfReaderApp(
                 state = state,
                 onServerUrlChanged = viewModel::onServerUrlChanged,
                 onApiKeyChanged = viewModel::onApiKeyChanged,
+                onAllowInsecureHttpChanged = viewModel::onAllowInsecureHttpChanged,
                 onTestConnection = viewModel::testConnection,
                 onConnectAndLoadLibraries = viewModel::connectAndLoadLibraries,
+                onForgetSavedConnection = viewModel::forgetSavedConnection,
                 onLibrarySelected = viewModel::selectLibrary,
                 onSeriesSelected = viewModel::selectSeries,
                 onBookSelected = viewModel::selectBook,
+                onDownloadFile = viewModel::downloadSelectedBookFile,
+                onOpenDownloadedEpub = { downloaded ->
+                    context.startActivity(
+                        ReaderActivity.createIntent(
+                            context = context,
+                            localPath = downloaded.localPath,
+                            bookIdentityId = downloaded.bookIdentityId,
+                            publicationFileId = downloaded.publicationFileId,
+                        ),
+                    )
+                },
                 onRetry = viewModel::retryCurrentScreen,
                 onBack = viewModel::goBack,
             )
@@ -105,11 +122,15 @@ private fun KavitaBrowserScreen(
     state: KavitaBrowserUiState,
     onServerUrlChanged: (String) -> Unit,
     onApiKeyChanged: (String) -> Unit,
+    onAllowInsecureHttpChanged: (Boolean) -> Unit,
     onTestConnection: () -> Unit,
     onConnectAndLoadLibraries: () -> Unit,
+    onForgetSavedConnection: () -> Unit,
     onLibrarySelected: (RemoteLibrary) -> Unit,
     onSeriesSelected: (RemoteSeries) -> Unit,
     onBookSelected: (RemoteBook) -> Unit,
+    onDownloadFile: (RemotePublicationFile) -> Unit,
+    onOpenDownloadedEpub: (FileDownloadUiState.Downloaded) -> Unit,
     onRetry: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -133,8 +154,10 @@ private fun KavitaBrowserScreen(
                     state = state,
                     onServerUrlChanged = onServerUrlChanged,
                     onApiKeyChanged = onApiKeyChanged,
+                    onAllowInsecureHttpChanged = onAllowInsecureHttpChanged,
                     onTestConnection = onTestConnection,
                     onConnectAndLoadLibraries = onConnectAndLoadLibraries,
+                    onForgetSavedConnection = onForgetSavedConnection,
                 )
 
                 BrowserScreen.Libraries -> LibrariesScreen(
@@ -158,6 +181,9 @@ private fun KavitaBrowserScreen(
                 BrowserScreen.BookDetails -> BookDetailsScreen(
                     fallbackBook = state.selectedBook,
                     details = state.bookDetails,
+                    downloadStates = state.downloadStates,
+                    onDownloadFile = onDownloadFile,
+                    onOpenDownloadedEpub = onOpenDownloadedEpub,
                     onRetry = onRetry,
                 )
             }
@@ -202,12 +228,21 @@ private fun ConnectionScreen(
     state: KavitaBrowserUiState,
     onServerUrlChanged: (String) -> Unit,
     onApiKeyChanged: (String) -> Unit,
+    onAllowInsecureHttpChanged: (Boolean) -> Unit,
     onTestConnection: () -> Unit,
     onConnectAndLoadLibraries: () -> Unit,
+    onForgetSavedConnection: () -> Unit,
 ) {
     ScreenColumn(
         modifier = Modifier.verticalScroll(rememberScrollState()),
     ) {
+        state.savedConnection?.let { saved ->
+            SavedConnectionSummary(
+                savedConnection = saved,
+                onForgetSavedConnection = onForgetSavedConnection,
+            )
+        }
+
         OutlinedTextField(
             value = state.serverUrl,
             onValueChange = onServerUrlChanged,
@@ -219,6 +254,11 @@ private fun ConnectionScreen(
                 keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Next,
             ),
+        )
+
+        InsecureHttpOptInRow(
+            checked = state.allowInsecureHttp,
+            onCheckedChange = onAllowInsecureHttpChanged,
         )
 
         OutlinedTextField(
@@ -259,6 +299,52 @@ private fun ConnectionScreen(
             ?.let { StatusText(message = it, isError = false) }
 
         state.connectionError?.let { StatusText(message = it, isError = true) }
+    }
+}
+
+@Composable
+private fun SavedConnectionSummary(
+    savedConnection: SavedConnectionUiState,
+    onForgetSavedConnection: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        DetailText(label = "Saved connection", value = savedConnection.displayName)
+        Text(
+            text = savedConnection.baseUrl,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            onClick = onForgetSavedConnection,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Forget saved connection")
+        }
+    }
+}
+
+@Composable
+private fun InsecureHttpOptInRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+        Text(
+            text = "Allow insecure HTTP for a trusted home network",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -365,6 +451,9 @@ private fun BooksScreen(
 private fun BookDetailsScreen(
     fallbackBook: RemoteBook?,
     details: LoadState<RemoteBookDetails>,
+    downloadStates: Map<String, FileDownloadUiState>,
+    onDownloadFile: (RemotePublicationFile) -> Unit,
+    onOpenDownloadedEpub: (FileDownloadUiState.Downloaded) -> Unit,
     onRetry: () -> Unit,
 ) {
     when (details) {
@@ -384,12 +473,22 @@ private fun BookDetailsScreen(
             onRetry = onRetry,
         )
 
-        is LoadState.Success -> BookDetails(details.value)
+        is LoadState.Success -> BookDetails(
+            details = details.value,
+            downloadStates = downloadStates,
+            onDownloadFile = onDownloadFile,
+            onOpenDownloadedEpub = onOpenDownloadedEpub,
+        )
     }
 }
 
 @Composable
-private fun BookDetails(details: RemoteBookDetails) {
+private fun BookDetails(
+    details: RemoteBookDetails,
+    downloadStates: Map<String, FileDownloadUiState>,
+    onDownloadFile: (RemotePublicationFile) -> Unit,
+    onOpenDownloadedEpub: (FileDownloadUiState.Downloaded) -> Unit,
+) {
     ScreenColumn(
         modifier = Modifier.verticalScroll(rememberScrollState()),
     ) {
@@ -406,8 +505,9 @@ private fun BookDetails(details: RemoteBookDetails) {
             DetailText(label = "Published", value = year.toString())
         }
 
-        if (!details.summary.isNullOrBlank()) {
-            DetailText(label = "Summary", value = details.summary.trim())
+        val summary = details.summary?.trim()
+        if (!summary.isNullOrEmpty()) {
+            DetailText(label = "Summary", value = summary)
         }
 
         Text(
@@ -423,39 +523,80 @@ private fun BookDetails(details: RemoteBookDetails) {
             )
         } else {
             details.files.forEach { file ->
-                PublicationFileRow(file)
+                PublicationFileRow(
+                    file = file,
+                    downloadState = downloadStates[file.id.value] ?: FileDownloadUiState.Idle,
+                    onDownloadFile = onDownloadFile,
+                    onOpenDownloadedEpub = onOpenDownloadedEpub,
+                )
             }
-        }
-
-        OutlinedButton(
-            onClick = {},
-            enabled = false,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Reader not implemented yet")
         }
     }
 }
 
 @Composable
-private fun PublicationFileRow(file: RemotePublicationFile) {
-    Column(
+private fun PublicationFileRow(
+    file: RemotePublicationFile,
+    downloadState: FileDownloadUiState,
+    onDownloadFile: (RemotePublicationFile) -> Unit,
+    onOpenDownloadedEpub: (FileDownloadUiState.Downloaded) -> Unit,
+) {
+    val action = publicationFileAction(file, downloadState)
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = file.fileName ?: "Unnamed file",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Text(
-            text = listOfNotNull(
-                file.format.takeUnless { it == PublicationFormat.UNKNOWN }?.name,
-                file.sizeBytes?.let(::formatBytes),
-            ).joinToString(" | ").ifBlank { "Format unavailable" },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = file.fileName ?: "Unnamed file",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = listOfNotNull(
+                    file.format.takeUnless { it == PublicationFormat.UNKNOWN }?.name,
+                    file.sizeBytes?.let(::formatBytes),
+                ).joinToString(" | ").ifBlank { "Format unavailable" },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            downloadState.statusText()?.let { status ->
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (downloadState is FileDownloadUiState.Error) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+        }
+
+        Button(
+            onClick = {
+                when (action) {
+                    PublicationFileAction.Download -> onDownloadFile(file)
+                    PublicationFileAction.OpenEpub -> {
+                        (downloadState as? FileDownloadUiState.Downloaded)?.let(onOpenDownloadedEpub)
+                    }
+
+                    PublicationFileAction.Busy,
+                    PublicationFileAction.DownloadedUnsupportedReader,
+                    PublicationFileAction.UnsupportedFormat,
+                    -> Unit
+                }
+            },
+            enabled = action == PublicationFileAction.Download || action == PublicationFileAction.OpenEpub,
+        ) {
+            Text(action.buttonText(downloadState))
+        }
     }
 }
 
@@ -643,6 +784,35 @@ private fun formatBytes(bytes: Long): String {
     if (mib < 1024.0) return "${mib.formatOneDecimal()} MiB"
     val gib = mib / 1024.0
     return "${gib.formatOneDecimal()} GiB"
+}
+
+private fun PublicationFileAction.buttonText(downloadState: FileDownloadUiState): String {
+    return when (this) {
+        PublicationFileAction.Download -> "Download"
+        PublicationFileAction.Busy -> when (downloadState) {
+            FileDownloadUiState.Checking -> "Checking..."
+            is FileDownloadUiState.Downloading -> "Downloading..."
+            else -> "Working..."
+        }
+
+        PublicationFileAction.OpenEpub -> "Open"
+        PublicationFileAction.DownloadedUnsupportedReader -> "Downloaded"
+        PublicationFileAction.UnsupportedFormat -> "Unsupported"
+    }
+}
+
+private fun FileDownloadUiState.statusText(): String? {
+    return when (this) {
+        FileDownloadUiState.Idle -> null
+        FileDownloadUiState.Checking -> "Checking local cache..."
+        is FileDownloadUiState.Downloading -> listOfNotNull(
+            formatBytes(bytesWritten),
+            totalBytes?.let { formatBytes(it) },
+        ).joinToString(" / ").let { "Downloading $it" }
+
+        is FileDownloadUiState.Downloaded -> "Saved for offline use."
+        is FileDownloadUiState.Error -> message
+    }
 }
 
 private fun Double.formatOneDecimal(): String {

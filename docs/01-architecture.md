@@ -13,6 +13,7 @@ shared/
   core/             Domain models and use cases
   source-api/       SourceAdapter contracts
   kavita-api/       Kavita adapter/auth implementation
+  download/         Shared download and local-cache use cases
   sync/             Local-first progress sync and conflict rules
   storage/          Local database abstractions
   reader-api/       Reader-engine abstraction layer
@@ -70,7 +71,7 @@ interface SourceAdapter {
     suspend fun listSeries(libraryId: RemoteLibraryId): List<RemoteSeries>
     suspend fun listBooks(seriesId: RemoteSeriesId): List<RemoteBook>
     suspend fun getBook(bookId: RemoteBookId): RemoteBookDetails
-    suspend fun downloadPublicationFile(fileId: RemoteFileId): DownloadHandle
+    suspend fun downloadFile(request: RemoteDownloadRequest, sink: DownloadSink): DownloadResult
 
     suspend fun getRemoteProgress(bookId: RemoteBookId): RemoteProgress?
     suspend fun setRemoteProgress(bookId: RemoteBookId, progress: RemoteProgress): ProgressWriteResult
@@ -108,6 +109,17 @@ Stores:
 - sync conflict records
 - reader preferences
 - TTS preferences
+
+### Download/cache layer
+
+Owns backend-neutral download orchestration:
+
+- checks whether a publication file is already cached locally
+- requests bytes through a source adapter
+- writes files through a platform file-store implementation
+- records downloaded file metadata only after a completed write
+
+Source modules own backend routes. Platform apps own filesystem locations.
 
 ### Sync engine
 

@@ -1,5 +1,7 @@
 package org.openshelf.reader
 
+import org.openshelf.reader.core.PublicationFormat
+import org.openshelf.reader.download.DownloadPublicationFileError
 import org.openshelf.reader.source.api.SourceAdapterException
 import org.openshelf.reader.source.api.SourceError
 import kotlin.test.Test
@@ -52,6 +54,26 @@ class KavitaUiMessageMapperTest {
         val message = "Do not show $TestApiKey here".redactApiKey(TestApiKey)
 
         assertEquals("Do not show <redacted> here", message)
+    }
+
+    @Test
+    fun mapsUnsupportedDownloadFormat() {
+        val message = messageForDownloadError(
+            error = DownloadPublicationFileError.UnsupportedFormat(PublicationFormat.MOBI),
+            apiKey = TestApiKey,
+        )
+
+        assertEquals("Only EPUB and PDF downloads are supported in this alpha.", message)
+    }
+
+    @Test
+    fun mapsDownloadSizeMismatchWithoutRawDetails() {
+        val message = messageForDownloadError(
+            error = DownloadPublicationFileError.SizeMismatch(expectedBytes = 10L, actualBytes = 3L),
+            apiKey = TestApiKey,
+        )
+
+        assertEquals("The download did not match the expected file size. Try again.", message)
     }
 
     private companion object {

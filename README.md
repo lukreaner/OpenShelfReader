@@ -86,7 +86,8 @@ Requirements:
 Useful commands:
 
 ```bash
-./gradlew :shared:core:jvmTest :shared:source-api:jvmTest :shared:kavita-api:jvmTest :shared:storage:jvmTest
+./gradlew :shared:core:jvmTest :shared:source-api:jvmTest :shared:kavita-api:jvmTest :shared:storage:jvmTest :shared:download:jvmTest
+./gradlew :apps:android:testDebugUnitTest
 ./gradlew :apps:android:assembleDebug
 ```
 

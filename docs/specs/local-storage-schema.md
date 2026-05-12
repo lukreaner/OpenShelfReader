@@ -8,6 +8,7 @@ CREATE TABLE source_account (
   type TEXT NOT NULL,
   display_name TEXT NOT NULL,
   base_url TEXT NOT NULL,
+  allow_insecure_http INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

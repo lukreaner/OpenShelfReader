@@ -30,7 +30,10 @@ jobs:
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Run shared module tests
-        run: ./gradlew --no-daemon :shared:core:jvmTest :shared:source-api:jvmTest :shared:kavita-api:jvmTest :shared:storage:jvmTest
+        run: ./gradlew --no-daemon :shared:core:jvmTest :shared:source-api:jvmTest :shared:kavita-api:jvmTest :shared:storage:jvmTest :shared:download:jvmTest
+
+      - name: Run Android unit tests
+        run: ./gradlew --no-daemon :apps:android:testDebugUnitTest
 
       - name: Assemble Android debug
         run: ./gradlew --no-daemon :apps:android:assembleDebug

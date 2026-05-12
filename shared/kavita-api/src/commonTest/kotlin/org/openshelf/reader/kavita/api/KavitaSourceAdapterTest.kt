@@ -4,9 +4,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.test.runTest
+import org.openshelf.reader.core.PublicationFormat
 import org.openshelf.reader.source.api.DownloadResult
 import org.openshelf.reader.source.api.ProgressWriteResult
 import org.openshelf.reader.source.api.RemoteBookId
+import org.openshelf.reader.source.api.RemoteDownloadRequest
 import org.openshelf.reader.source.api.RemoteFileId
 import org.openshelf.reader.source.api.RemoteProgress
 import org.openshelf.reader.source.api.SourceAdapterException
@@ -22,14 +24,14 @@ import kotlin.test.assertTrue
 
 class KavitaSourceAdapterTest {
     @Test
-    fun declaresOnlyImplementedBrowsingCapabilities() {
+    fun declaresImplementedBrowsingAndDownloadCapabilities() {
         val adapter = adapter()
 
         assertEquals(SourceType.KAVITA, adapter.sourceType)
         assertTrue(adapter.capabilities.supportsLibraryBrowsing)
         assertTrue(adapter.capabilities.supportsSeriesMetadata)
         assertFalse(adapter.capabilities.supportsSearch)
-        assertFalse(adapter.capabilities.supportsDownloads)
+        assertTrue(adapter.capabilities.supportsDownloads)
         assertFalse(adapter.capabilities.supportsRemoteProgressRead)
         assertFalse(adapter.capabilities.supportsRemoteProgressWrite)
     }
@@ -48,16 +50,32 @@ class KavitaSourceAdapterTest {
         }
         assertIs<SourceError.UnsupportedOperation>(progressException.error)
 
-        val downloadResult = adapter.downloadFile(RemoteFileId("401")) { _ -> }
-        val downloadFailure = assertIs<DownloadResult.Failure>(downloadResult)
-        assertIs<SourceError.UnsupportedOperation>(downloadFailure.error)
-
         val writeResult = adapter.setRemoteProgress(
             bookId = RemoteBookId("301"),
             progress = RemoteProgress(bookId = RemoteBookId("301")),
         )
         val writeFailure = assertIs<ProgressWriteResult.Failure>(writeResult)
         assertIs<SourceError.UnsupportedOperation>(writeFailure.error)
+    }
+
+    @Test
+    fun downloadFileDelegatesToKavitaDownloadClient() = runTest {
+        val adapter = adapter()
+        val bytes = mutableListOf<Byte>()
+
+        val result = adapter.downloadFile(
+            request = RemoteDownloadRequest(
+                bookId = RemoteBookId("301"),
+                fileId = RemoteFileId("401"),
+                expectedFormat = PublicationFormat.EPUB,
+                expectedFileName = "book.epub",
+            ),
+        ) { chunk -> bytes += chunk.toList() }
+
+        val success = assertIs<DownloadResult.Success>(result)
+        assertEquals(RemoteFileId("401"), success.fileId)
+        assertEquals(4L, success.bytesWritten)
+        assertEquals(listOf(1, 2, 3, 4).map(Int::toByte), bytes)
     }
 
     @Test
@@ -71,7 +89,7 @@ class KavitaSourceAdapterTest {
     private fun adapter(): KavitaSourceAdapter {
         val httpClient = HttpClient(
             MockEngine {
-                respond("""{"expiresAt": null}""")
+                respond(byteArrayOf(1, 2, 3, 4))
             },
         )
         return KavitaSourceAdapter(

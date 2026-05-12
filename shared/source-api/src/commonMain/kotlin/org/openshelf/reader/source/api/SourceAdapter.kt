@@ -19,7 +19,7 @@ interface SourceAdapter {
 
     suspend fun getBook(bookId: RemoteBookId): RemoteBookDetails
     suspend fun getCover(bookId: RemoteBookId): ByteArray?
-    suspend fun downloadFile(fileId: RemoteFileId, sink: DownloadSink): DownloadResult
+    suspend fun downloadFile(request: RemoteDownloadRequest, sink: DownloadSink): DownloadResult
 
     suspend fun getRemoteProgress(bookId: RemoteBookId): RemoteProgress?
     suspend fun setRemoteProgress(bookId: RemoteBookId, progress: RemoteProgress): ProgressWriteResult
